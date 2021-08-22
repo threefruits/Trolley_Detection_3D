@@ -162,16 +162,18 @@ class TrolleyEstimator():
         for i in range(out.shape[1]):
             one_layer = out[0][i]
             max_point_value = np.max(one_layer)
-            if max_point_value > 0.01:
+            if max_point_value > 0:
                 coor = np.where(one_layer == max_point_value)
                 # print(i, coor[0][0], coor[1][0], "max: ", np.max(one_layer))
                 x = coor[1][0] * 4
                 y = coor[0][0] * 4
-                # draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
-                # draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
+                draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
+                draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
                 point_result_dict.append([x, y])
         # plt.subplot(1, 2, 2)
-        # plt.imshow(draw_img)
+        # cv2.imshow('frame',draw_img)
+        # if cv2.waitKey(1) == ord('q'):
+        #     cv2.destroyAllWindows()
         return point_result_dict
 
     def generate_key_points(self, image):
@@ -286,9 +288,9 @@ class TrolleyEstimator():
         """
         points = self.generate_key_points(image)
         # image_points = np.array([[692,962],[784,946],[740,894],[574,916],[741,566],[568,553]], dtype="double")
-        R_, T, euler_angles = self.solve_pose(points)
-        print(T,euler_angles)
-        T = self.R.dot(T)
-
-        return R_, T, euler_angles
-    
+        if len(points) > 0:
+            print(points)
+            R_, T, euler_angles = self.solve_pose(points)
+            T = self.R.dot(T)
+            return R_, T, euler_angles
+        return [], [], []
