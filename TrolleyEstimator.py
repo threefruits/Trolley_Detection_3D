@@ -44,6 +44,8 @@ class TrolleyEstimator():
         self.iou_thres=0.45
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.transform, self.keypoint_model = self.trolley_keypoints_init()
+        self.car_marker = Marker()
+        self.car_pub = rospy.Publisher('/car_maker', Marker, queue_size=10)
 
     def publish_marker(self, T, euler_angles):
         """
@@ -54,12 +56,6 @@ class TrolleyEstimator():
         self.T = T
         self.euler_angles = euler_angles
 
-        self.car_marker = Marker()
-        self.car_pub = rospy.Publisher('/car_maker', Marker, queue_size=10)
-
-        self.sim_update = rospy.Timer(rospy.Duration(0.01), self.sim_update_fun)
-
-    def sim_update_fun(self,event):
         self.car_marker.header.frame_id = "camera_base"
         self.car_marker.type = self.car_marker.CUBE
         self.car_marker.pose.position.x = self.T[0]
@@ -162,13 +158,13 @@ class TrolleyEstimator():
         for i in range(out.shape[1]):
             one_layer = out[0][i]
             max_point_value = np.max(one_layer)
-            if max_point_value > 0:
+            if max_point_value > 0.05:
                 coor = np.where(one_layer == max_point_value)
                 # print(i, coor[0][0], coor[1][0], "max: ", np.max(one_layer))
                 x = coor[1][0] * 4
                 y = coor[0][0] * 4
-                draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
-                draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
+                # draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
+                # draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
                 point_result_dict.append([x, y])
         # plt.subplot(1, 2, 2)
         # cv2.imshow('frame',draw_img)
@@ -222,13 +218,13 @@ class TrolleyEstimator():
                 for i in range(6):
                     x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*0.28).astype(int) -100
                     y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*0.28).astype(int) -100
-                    # srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
+                    srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
                     keypoint_in_original.append([x,y])
                 print(keypoint_in_original)
 
-                # new_name = 'test' + '.jpg'
-                # dst = os.path.join(os.path.abspath(target_path), new_name)
-                # cv2.imwrite(dst,srcImg)
+                new_name = 'test' + '.jpg'
+                dst =  new_name
+                cv2.imwrite(dst,srcImg)
 
         image_points = np.array(keypoint_in_original, dtype="double")
         return image_points
