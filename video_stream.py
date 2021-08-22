@@ -1,3 +1,5 @@
+import sys
+# sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')
 import rospy
 import cv2
 import numpy as np
@@ -29,4 +31,6 @@ if __name__=="__main__":
         R, T, euler_angles = trolley_estimator.detect_3D(image)
         if len(euler_angles) != 0:
             trolley_estimator.publish_marker(T,  euler_angles)
+
+
         
