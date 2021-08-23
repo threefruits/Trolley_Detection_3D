@@ -1,22 +1,24 @@
 
-import sys
-# sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')
+
 import rospy
 import time
 import math
 import os
 
-import cv2
+
 import torch
 import numpy as np
 import torchvision
 from torchvision import transforms
 from visualization_msgs.msg import Marker
 
+import sys
+sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+import cv2
+
 from models.experimental import attempt_load
 from models.Stack import HourglassNet,Bottleneck
 from utils.general import non_max_suppression
-
 
 
 class TrolleyEstimator():
