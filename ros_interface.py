@@ -11,7 +11,7 @@ import numpy as np
 class Trolley_Estimator_ROS():
     def __init__(self):
         self.TrolleyEstimator = TrolleyEstimator()
-        self.__sub_curr_state = rospy.Subscriber('/rgb/image_raw', Image, self._image_cb)
+        self.__sub_curr_state = rospy.Subscriber('/camera/color/image_raw', Image, self._image_cb)
         # self.__sub_curr_state = rospy.Subscriber('/device_0/sensor_1/Color_0/image/data', Image, self._image_cb)
         
 

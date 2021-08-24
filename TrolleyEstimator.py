@@ -161,7 +161,7 @@ class TrolleyEstimator():
         for i in range(out.shape[1]):
             one_layer = out[0][i]
             max_point_value = np.max(one_layer)
-            if max_point_value > 0.05:
+            if max_point_value > 0.01:
                 coor = np.where(one_layer == max_point_value)
                 # print(i, coor[0][0], coor[1][0], "max: ", np.max(one_layer))
                 x = coor[1][0] * 4
@@ -265,11 +265,21 @@ class TrolleyEstimator():
         # cx = 1023.77
         # cy = 778.886
         # dist_coefs = np.array([[0.4808, -2.6471,-0.000164,-0.0001218,1.5565,0.361842,-2.47278,1.48308]]).T
-        fx = 920.22
-        fy = 918.20
-        cx = 648.84
-        cy = 363.6268
+
+        # anxin parameter
+        # fx = 920.22
+        # fy = 918.20
+        # cx = 648.84
+        # cy = 363.6268
+        # dist_coefs = np.array([[0,0,0,0]]).T
+
+        #jieting parameter
+        fx = 909.98
+        fy = 910.67
+        cx = 636.63
+        cy = 358.30
         dist_coefs = np.array([[0,0,0,0]]).T
+
         R_ext = np.array([[1,0,0],[0,0,1],[0,-1,0]])
 
         camera_matrix = np.array([[fx,0,cx],[0,fy,cy],[0,0,1]])
