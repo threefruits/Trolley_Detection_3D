@@ -13,7 +13,7 @@ from torchvision import transforms
 from visualization_msgs.msg import Marker
 
 import sys
-sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+# sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import cv2
 
 from models.experimental import attempt_load
@@ -37,10 +37,10 @@ class TrolleyEstimator():
         self.W=0.5
         self.H=1.0
         self.height = 640
-        self. weight = 640
+        self.weight = 640
         self.dim = (self.weight, self. height)
         self.R = np.array([[0,1,0],[-1,0,0],[0,0,1]])
-        self.keypoint_model_path = r'./checkpoint/keypoint_ckpt.pth'
+        self.keypoint_model_path = r'./checkpoint/epoch_300.pth'
         self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_500.pt'
         self.conf_thres=0.30
         self.iou_thres=0.45
@@ -154,7 +154,8 @@ class TrolleyEstimator():
         # plt.figure(2)
         # plt.subplot(1, 2, 1)
         show_out = np.max(out[0], axis=0)
-        # plt.imshow(show_out)
+        # print(show_out)
+        # print(show_out)
         # point_result_dict = {}
         point_result_dict = []
         for i in range(out.shape[1]):
@@ -215,18 +216,23 @@ class TrolleyEstimator():
                 # print(srcImg_padding.shape,srcImg_crop.shape,point_in_original)
 
                 srcImg_crop = cv2.resize(srcImg_crop,(256,256))
+                # print(srcImg_crop)
                 point_result = self.trolley_infer(self.transform, self.keypoint_model, srcImg_crop)
                 # print("point_result: ", point_result)
-                for i in range(6):
-                    x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*0.28).astype(int) -100
-                    y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*0.28).astype(int) -100
-                    srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
-                    keypoint_in_original.append([x,y])
-                print(keypoint_in_original)
+                if len(point_result) == 6:
+                    for i in range(6):
+                        x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*0.28).astype(int) -100
+                        y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*0.28).astype(int) -100
+                        srcImg = cv2.putText(srcImg, str(i), (x.astype(int), y.astype(int)), cv2.FONT_HERSHEY_COMPLEX, 2, [0, 0, 255], 2)
+                        srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
+                        keypoint_in_original.append([x,y])
+                    print(keypoint_in_original)
 
-                new_name = 'test' + '.jpg'
-                dst =  new_name
-                cv2.imwrite(dst,srcImg)
+                    cv2.imshow("s",srcImg)
+                    cv2.waitKey(1)
+                    new_name = 'test' + '.jpg'
+                    dst =  new_name
+                    cv2.imwrite(dst,srcImg)
 
         image_points = np.array(keypoint_in_original, dtype="double")
         return image_points
@@ -254,17 +260,23 @@ class TrolleyEstimator():
             * R, T of robot in camera base
         
         """
-        fx = 972.195
-        fy = 972.023
-        cx = 1023.77
-        cy = 778.886
+        # fx = 972.195
+        # fy = 972.023
+        # cx = 1023.77
+        # cy = 778.886
+        # dist_coefs = np.array([[0.4808, -2.6471,-0.000164,-0.0001218,1.5565,0.361842,-2.47278,1.48308]]).T
+        fx = 920.22
+        fy = 918.20
+        cx = 648.84
+        cy = 363.6268
+        dist_coefs = np.array([[0,0,0,0]]).T
         R_ext = np.array([[1,0,0],[0,0,1],[0,-1,0]])
 
         camera_matrix = np.array([[fx,0,cx],[0,fy,cy],[0,0,1]])
-        dist_coefs = np.array([[0.4808, -2.6471,-0.000164,-0.0001218,1.5565,0.361842,-2.47278,1.48308]]).T
+        
         image_points = image_points
-        model_points = np.array([[0.13662,0.39554,0.1],[-0.13662,0.39554,0.1],[-0.2535,-0.39554,0.1],[0.2535,-0.39554,0.1],[-0.2535,-0.39554,1],[0.2535,-0.39554,1]])
-        (_, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coefs)
+        model_points = np.array([[0.13662,0.39554,0.15],[-0.13662,0.39554,0.15],[-0.2535,-0.39554,0.15],[0.2535,-0.39554,0.15],[-0.2535,-0.39554,1],[0.2535,-0.39554,1]])
+        (_, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coefs,flags = cv2.SOLVEPNP_EPNP)
         R, _ = cv2.Rodrigues(rotation_vector)
 
         R_ = R_ext.dot(R)
@@ -286,8 +298,8 @@ class TrolleyEstimator():
         """
         points = self.generate_key_points(image)
         # image_points = np.array([[692,962],[784,946],[740,894],[574,916],[741,566],[568,553]], dtype="double")
-        if len(points) > 0:
-            print(points)
+        if len(points) == 6:
+            # print(points)
             R_, T, euler_angles = self.solve_pose(points)
             T = self.R.dot(T)
             return R_, T, euler_angles
