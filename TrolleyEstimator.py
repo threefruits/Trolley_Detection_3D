@@ -40,7 +40,7 @@ class TrolleyEstimator():
         self.weight = 640
         self.dim = (self.weight, self. height)
         self.R = np.array([[0,1,0],[-1,0,0],[0,0,1]])
-        self.keypoint_model_path = r'./checkpoint/epoch_300.pth'
+        self.keypoint_model_path = r'./checkpoint/epoch_270.pth'
         self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_500.pt'
         self.conf_thres=0.30
         self.iou_thres=0.45
@@ -198,6 +198,7 @@ class TrolleyEstimator():
         w_ratio = w/640
         h_ratio = h/640
         count = 0
+        gamma = 0.28
         srcImg_640 = cv2.resize(srcImg,self.dim)
 
         xyxy = self.detected_car_pos(srcImg_640)
@@ -209,10 +210,10 @@ class TrolleyEstimator():
             point_in_original.append( ( (xyxy[3].cpu().numpy() - 320) * h_ratio + h/2).astype(int) )
             h_d = (point_in_original[3] - point_in_original[1])
             w_d = (point_in_original[2] - point_in_original[0]) 
-            h_crop = (point_in_original[3] - point_in_original[1]) * 1.56
-            w_crop = (point_in_original[2] - point_in_original[0]) * 1.56
-            if(0<point_in_original[0]-(w_d*0.28).astype(int) and 0<point_in_original[1]-(h_d*0.28).astype(int) and point_in_original[2]+(w_d*0.28).astype(int)<w and point_in_original[3]+(h_d*0.28).astype(int)<h):
-                srcImg_crop = srcImg_padding[point_in_original[1]-(h_d*0.28).astype(int):point_in_original[3]+(h_d*0.28).astype(int),point_in_original[0]-(w_d*0.28).astype(int):point_in_original[2]+(w_d*0.28).astype(int)]
+            h_crop = (point_in_original[3] - point_in_original[1]) * (1+ 2*gamma)
+            w_crop = (point_in_original[2] - point_in_original[0]) * (1+ 2*gamma)
+            if(0<point_in_original[0]-(w_d*gamma).astype(int) and 0<point_in_original[1]-(h_d*gamma).astype(int) and point_in_original[2]+(w_d*gamma).astype(int)<w and point_in_original[3]+(h_d*gamma).astype(int)<h):
+                srcImg_crop = srcImg_padding[point_in_original[1]-(h_d*gamma).astype(int):point_in_original[3]+(h_d*gamma).astype(int),point_in_original[0]-(w_d*gamma).astype(int):point_in_original[2]+(w_d*gamma).astype(int)]
                 # print(srcImg_padding.shape,srcImg_crop.shape,point_in_original)
 
                 srcImg_crop = cv2.resize(srcImg_crop,(256,256))
@@ -221,8 +222,8 @@ class TrolleyEstimator():
                 # print("point_result: ", point_result)
                 if len(point_result) == 6:
                     for i in range(6):
-                        x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*0.28).astype(int) -100
-                        y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*0.28).astype(int) -100
+                        x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*gamma).astype(int) -100
+                        y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*gamma).astype(int) -100
                         srcImg = cv2.putText(srcImg, str(i), (x.astype(int), y.astype(int)), cv2.FONT_HERSHEY_COMPLEX, 2, [0, 0, 255], 2)
                         srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
                         keypoint_in_original.append([x,y])
@@ -230,9 +231,9 @@ class TrolleyEstimator():
 
                     cv2.imshow("s",srcImg)
                     cv2.waitKey(1)
-                    new_name = 'test' + '.jpg'
-                    dst =  new_name
-                    cv2.imwrite(dst,srcImg)
+                    # new_name = 'test' + '.jpg'
+                    # dst =  new_name
+                    # cv2.imwrite(dst,srcImg)
 
         image_points = np.array(keypoint_in_original, dtype="double")
         return image_points
