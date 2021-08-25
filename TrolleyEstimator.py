@@ -46,6 +46,7 @@ class TrolleyEstimator():
         self.iou_thres=0.45
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.transform, self.keypoint_model = self.trolley_keypoints_init()
+        self.yolo_model = attempt_load(self.yolo5_model_path, map_location=self.device)
         self.car_marker = Marker()
         self.car_pub = rospy.Publisher('/car_maker', Marker, queue_size=10)
 
@@ -102,8 +103,7 @@ class TrolleyEstimator():
             img = img[None]  # expand for batch dim
         # print(img.shape)
 
-        yolo_model = attempt_load(self.yolo5_model_path, map_location=self.device)
-        pred = yolo_model(img, augment=False, visualize=False)[0]
+        pred = self.yolo_model(img, augment=False, visualize=False)[0]
         pred = non_max_suppression(pred, self.conf_thres, self.iou_thres, None, False, max_det=1000)
 
         for i, det in enumerate(pred):  # detections per image
@@ -141,7 +141,8 @@ class TrolleyEstimator():
             * keypoints in the croped image ......... (list: len = 6, with [x,y])
         
         """
-        t2 = time.time()
+        # start = time.time()
+        
         test_img = cv2.resize(test_img, (256, 256))
         draw_img = test_img.copy()
         test_img = transform(test_img)
@@ -149,7 +150,8 @@ class TrolleyEstimator():
         out = model(test_img)
         out = torch.sigmoid(out[-1])
         out = out.cpu().detach().numpy()
-        # print("infer time: ", time.time() - t2)
+        # end = time.time()
+        # print(end-start)
         # show_six_feature(out, figure_num=1, img=test_img)
         # plt.figure(2)
         # plt.subplot(1, 2, 1)
@@ -161,7 +163,7 @@ class TrolleyEstimator():
         for i in range(out.shape[1]):
             one_layer = out[0][i]
             max_point_value = np.max(one_layer)
-            if max_point_value > 0.01:
+            if max_point_value > 0.001:
                 coor = np.where(one_layer == max_point_value)
                 # print(i, coor[0][0], coor[1][0], "max: ", np.max(one_layer))
                 x = coor[1][0] * 4
@@ -198,10 +200,11 @@ class TrolleyEstimator():
         w_ratio = w/640
         h_ratio = h/640
         count = 0
-        gamma = 0.28
+        gamma = 0.2
         srcImg_640 = cv2.resize(srcImg,self.dim)
 
-        xyxy = self.detected_car_pos(srcImg_640)
+        xyxy = self.detected_car_pos(srcImg_640) ## 0.15s / img
+        
         # xyxy = detected_car(srcImg_640)
         if(xyxy):
             point_in_original.append( ( (xyxy[0].cpu().numpy() - 320) * w_ratio + w/2).astype(int) )
@@ -218,7 +221,8 @@ class TrolleyEstimator():
 
                 srcImg_crop = cv2.resize(srcImg_crop,(256,256))
                 # print(srcImg_crop)
-                point_result = self.trolley_infer(self.transform, self.keypoint_model, srcImg_crop)
+                point_result = self.trolley_infer(self.transform, self.keypoint_model, srcImg_crop) # 0.04
+                
                 # print("point_result: ", point_result)
                 if len(point_result) == 6:
                     for i in range(6):
@@ -227,10 +231,10 @@ class TrolleyEstimator():
                         srcImg = cv2.putText(srcImg, str(i), (x.astype(int), y.astype(int)), cv2.FONT_HERSHEY_COMPLEX, 2, [0, 0, 255], 2)
                         srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
                         keypoint_in_original.append([x,y])
-                    print(keypoint_in_original)
+                    # print(keypoint_in_original)
 
-                    cv2.imshow("s",srcImg)
-                    cv2.waitKey(1)
+                    # cv2.imshow("s",srcImg)
+                    # cv2.waitKey(1)
                     # new_name = 'test' + '.jpg'
                     # dst =  new_name
                     # cv2.imwrite(dst,srcImg)
@@ -279,23 +283,31 @@ class TrolleyEstimator():
         fy = 910.67
         cx = 636.63
         cy = 358.30
-        dist_coefs = np.array([[0,0,0,0]]).T
+        dist_coefs = np.array([[0.0,0.0,0.0,0.0]]).T
 
         R_ext = np.array([[1,0,0],[0,0,1],[0,-1,0]])
 
         camera_matrix = np.array([[fx,0,cx],[0,fy,cy],[0,0,1]])
         
         image_points = image_points
-        model_points = np.array([[0.13662,0.39554,0.15],[-0.13662,0.39554,0.15],[-0.2535,-0.39554,0.15],[0.2535,-0.39554,0.15],[-0.2535,-0.39554,1],[0.2535,-0.39554,1]])
-        (_, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coefs,flags = cv2.SOLVEPNP_EPNP)
+        model_points = np.array([[0.11,0.28,0.17],[-0.11,0.28,0.17],[-0.23,-0.28,0.17],[0.23,-0.28,0.17],[-0.23,-0.28,0.95],[0.23,-0.28,0.95]])
+        (rec, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coefs,flags = cv2.SOLVEPNP_EPNP )
+        
         R, _ = cv2.Rodrigues(rotation_vector)
 
         R_ = R_ext.dot(R)
         T = R_ext.dot(translation_vector)
 
+        # reproject_points_3d =  R.dot(model_points.T)+translation_vector
+        reproject_points_3d = model_points
+        reproject_points,_ = cv2.projectPoints(reproject_points_3d, R, translation_vector, camera_matrix,dist_coefs)
+        # print("print reprojected points")
+
+        reprojection_error = np.mean((image_points-reproject_points[:,0,:])**2)
+        # print(reprojection_error)
         euler_angles = self.rot2eul(R_)
         
-        return R_,T, euler_angles
+        return R_,T, euler_angles,reprojection_error
 
     def detect_3D(self, image):
         """
@@ -307,11 +319,14 @@ class TrolleyEstimator():
             * R, T of robot in camera base
         
         """
+        
         points = self.generate_key_points(image)
+        
         # image_points = np.array([[692,962],[784,946],[740,894],[574,916],[741,566],[568,553]], dtype="double")
         if len(points) == 6:
             # print(points)
-            R_, T, euler_angles = self.solve_pose(points)
-            T = self.R.dot(T)
-            return R_, T, euler_angles
+            R_, T, euler_angles,reprojection_error = self.solve_pose(points)
+            if(reprojection_error<50):
+                T = self.R.dot(T)
+                return R_, T, euler_angles
         return [], [], []
