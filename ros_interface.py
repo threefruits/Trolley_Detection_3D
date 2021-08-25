@@ -18,7 +18,6 @@ class Trolley_Estimator_ROS():
 
 		# self.ob_pub = rospy.Publisher('/ob_draw', MarkerArray, queue_size=10)
     def _image_cb(self, msg):
-        
         image = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
 
         # print((msg.height,msg.width,3))

@@ -168,13 +168,13 @@ class TrolleyEstimator():
                 # print(i, coor[0][0], coor[1][0], "max: ", np.max(one_layer))
                 x = coor[1][0] * 4
                 y = coor[0][0] * 4
-                # draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
-                # draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
+                draw_img = cv2.putText(draw_img, str(i), (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, [0, 0, 255], 2)
+                draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
                 point_result_dict.append([x, y])
         # plt.subplot(1, 2, 2)
-        # cv2.imshow('frame',draw_img)
-        # if cv2.waitKey(1) == ord('q'):
-        #     cv2.destroyAllWindows()
+        cv2.imshow('frame',draw_img)
+        if cv2.waitKey(1) == ord('q'):
+            cv2.destroyAllWindows()
         return point_result_dict
 
     def generate_key_points(self, image):
@@ -192,25 +192,37 @@ class TrolleyEstimator():
         keypoint_in_original = []
         srcImg = image.copy()
         # import pdb;pdb.set_trace()
-
-        srcImg_padding = cv2.copyMakeBorder(srcImg, 100, 100, 100, 100, cv2.BORDER_REPLICATE)
+        p1 = 100
+        p2 = 300
+        p3 = 100
+        p4 = 100
+        srcImg_padding = cv2.copyMakeBorder(srcImg, p1, p2, p3, p4, cv2.BORDER_REPLICATE)
 
         h = srcImg_padding.shape[0]
         w = srcImg_padding.shape[1]
         w_ratio = w/640
         h_ratio = h/640
+        h__original = srcImg.shape[0]
+        w__original = srcImg.shape[1]
+        w_ratio_original = w__original/640
+        h_ratio_original = h__original/640
         count = 0
-        gamma = 0.2
+        gamma = 0.25
         srcImg_640 = cv2.resize(srcImg,self.dim)
 
         xyxy = self.detected_car_pos(srcImg_640) ## 0.15s / img
         
         # xyxy = detected_car(srcImg_640)
         if(xyxy):
-            point_in_original.append( ( (xyxy[0].cpu().numpy() - 320) * w_ratio + w/2).astype(int) )
-            point_in_original.append( ( (xyxy[1].cpu().numpy() - 320) * h_ratio + h/2).astype(int) )
-            point_in_original.append( ( (xyxy[2].cpu().numpy() - 320) * w_ratio + w/2).astype(int) )
-            point_in_original.append( ( (xyxy[3].cpu().numpy() - 320) * h_ratio + h/2).astype(int) )
+            point_in_original.append( ( ( (xyxy[0].cpu().numpy() - 320) * w_ratio_original + w__original/2).astype(int) ) + p3)
+            point_in_original.append( ( ( (xyxy[1].cpu().numpy() - 320) * h_ratio_original + h__original/2).astype(int) ) + p1)
+            point_in_original.append( ( ( (xyxy[2].cpu().numpy() - 320) * w_ratio_original + w__original/2).astype(int) ) + p3)
+            point_in_original.append( ( ( (xyxy[3].cpu().numpy() - 320) * h_ratio_original + h__original/2).astype(int) ) + p1)
+
+            # point_in_original.append( ( (xyxy[0].cpu().numpy() - 320) * w_ratio + w/2).astype(int) )
+            # point_in_original.append( ( (xyxy[1].cpu().numpy() - 320) * h_ratio + h/2).astype(int) )
+            # point_in_original.append( ( (xyxy[2].cpu().numpy() - 320) * w_ratio + w/2).astype(int) )
+            # point_in_original.append( ( (xyxy[3].cpu().numpy() - 320) * h_ratio + h/2).astype(int) )
             h_d = (point_in_original[3] - point_in_original[1])
             w_d = (point_in_original[2] - point_in_original[0]) 
             h_crop = (point_in_original[3] - point_in_original[1]) * (1+ 2*gamma)
@@ -226,8 +238,8 @@ class TrolleyEstimator():
                 # print("point_result: ", point_result)
                 if len(point_result) == 6:
                     for i in range(6):
-                        x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*gamma).astype(int) -100
-                        y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*gamma).astype(int) -100
+                        x = point_result[i][0] * (w_crop/256) + point_in_original[0]-(w_d*gamma).astype(int) -p3
+                        y = point_result[i][1] * (h_crop/256) + point_in_original[1]-(h_d*gamma).astype(int) -p1
                         srcImg = cv2.putText(srcImg, str(i), (x.astype(int), y.astype(int)), cv2.FONT_HERSHEY_COMPLEX, 2, [0, 0, 255], 2)
                         srcImg = cv2.circle(srcImg, (x.astype(int) , y.astype(int) ), 10, [255, 255, 255], 4)
                         keypoint_in_original.append([x,y])
@@ -328,5 +340,7 @@ class TrolleyEstimator():
             R_, T, euler_angles,reprojection_error = self.solve_pose(points)
             if(reprojection_error<50):
                 T = self.R.dot(T)
+                euler_angles[0] = 0 
+                euler_angles[1] = 0
                 return R_, T, euler_angles
         return [], [], []
