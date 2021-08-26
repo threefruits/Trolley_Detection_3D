@@ -40,7 +40,7 @@ class TrolleyEstimator():
         self.weight = 640
         self.dim = (self.weight, self. height)
         self.R = np.array([[0,1,0],[-1,0,0],[0,0,1]])
-        self.keypoint_model_path = r'./checkpoint/epoch_270.pth'
+        self.keypoint_model_path = r'./checkpoint/epoch_300.pth'
         self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_500.pt'
         self.conf_thres=0.30
         self.iou_thres=0.45
@@ -172,9 +172,9 @@ class TrolleyEstimator():
                 draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
                 point_result_dict.append([x, y])
         # plt.subplot(1, 2, 2)
-        cv2.imshow('frame',draw_img)
-        if cv2.waitKey(1) == ord('q'):
-            cv2.destroyAllWindows()
+        # cv2.imshow('frame',draw_img)
+        # if cv2.waitKey(1) == ord('q'):
+        #     cv2.destroyAllWindows()
         return point_result_dict
 
     def generate_key_points(self, image):
@@ -207,7 +207,7 @@ class TrolleyEstimator():
         w_ratio_original = w__original/640
         h_ratio_original = h__original/640
         count = 0
-        gamma = 0.25
+        gamma = 0.20
         srcImg_640 = cv2.resize(srcImg,self.dim)
 
         xyxy = self.detected_car_pos(srcImg_640) ## 0.15s / img
@@ -338,6 +338,7 @@ class TrolleyEstimator():
         if len(points) == 6:
             # print(points)
             R_, T, euler_angles,reprojection_error = self.solve_pose(points)
+            print(reprojection_error)
             if(reprojection_error<50):
                 T = self.R.dot(T)
                 euler_angles[0] = 0 
