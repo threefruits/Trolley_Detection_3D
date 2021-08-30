@@ -81,7 +81,37 @@ class TrolleyEstimator():
         # p = np.dot(self.intr, self.point1)/ 1.2
         # print(p)
         self.car_pub.publish(self.car_marker)
-    
+
+    def publish_marker_simple(self, x, y, yaw):
+        """
+
+        Publish maker in rviz
+
+        """
+
+        self.car_marker.header.frame_id = "camera_base"
+        self.car_marker.type = self.car_marker.CUBE
+        self.car_marker.pose.position.x = x
+        self.car_marker.pose.position.y = y
+        self.car_marker.pose.position.z = -0.5
+        # q =tf.transformations.quaternion_from_euler(self.euler_angles[0],self.euler_angles[1],self.euler_angles[2])
+        q = self.rpy2quaternion(0,0,yaw)
+        self.car_marker.pose.orientation.x = q[0]
+        self.car_marker.pose.orientation.y = q[1]
+        self.car_marker.pose.orientation.z = q[2]
+        self.car_marker.pose.orientation.w = q[3]
+        self.car_marker.scale.x = self.L
+        self.car_marker.scale.y = self.W
+        self.car_marker.scale.z = self.H
+        self.car_marker.color.a= 1
+        self.car_marker.color.r = 0
+        self.car_marker.color.g = 1
+        self.car_marker.color.b = 0
+
+        # p = np.dot(self.intr, self.point1)/ 1.2
+        # print(p)
+        self.car_pub.publish(self.car_marker)
+
     def detected_car_pos(self, img):
         """
         This is the interface of trolley pose detection.
