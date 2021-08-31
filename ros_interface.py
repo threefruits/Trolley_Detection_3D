@@ -17,6 +17,7 @@ class Trolley_Estimator_ROS():
         self.__sub_img = rospy.Subscriber('/camera/color/image_raw', Image, self.__image_cb, queue_size=10)
         self.__sub_curr_state = rospy.Subscriber('/curr_state', Float32MultiArray, self.__curr_pose_cb, queue_size=10)
         self.__pub_target = rospy.Publisher('/target', Float32MultiArray, queue_size=10)
+        self.__pub_trolley = rospy.Publisher('/trolley', Float32MultiArray, queue_size=10)
         self.__timer_publish_target = rospy.Timer(rospy.Duration(0.01), self.state_filter)
         self.last_target = np.zeros(3)
         self.target = np.zeros(3)
@@ -32,9 +33,11 @@ class Trolley_Estimator_ROS():
         for i in range(3):
             self.curr_state[i] = data.data[i]
 
-    def state_filter(self): 
+    def state_filter(self,event): 
         target_point = Float32MultiArray()
+        target_back_point = Float32MultiArray()
         alpha = 0.3
+        # print("fsdfijsdhfjksdhfjk")
         if(self.is_obser):
             self.target = alpha * self.last_target + (1-alpha) * self.observation
             self.is_obser = False
@@ -43,7 +46,13 @@ class Trolley_Estimator_ROS():
         self.last_target = self.target
         for i in range(3): 
             target_point.data.append(self.target[i])
-        self.__pub_target(target_point)
+        distance = 1.5
+        target_back_point.data.append(self.target[0] - distance*np.cos(self.target[2]) )
+        target_back_point.data.append(self.target[1] - distance*np.sin(self.target[2]) )
+        target_back_point.data.append(self.target[2] )
+        self.TrolleyEstimator.publish_marker_simple(self.target[0],self.target[1],self.target[2])
+        self.__pub_target.publish(target_back_point)
+        self.__pub_trolley.publish(target_point)
         
 
     def __image_cb(self, msg):
@@ -58,7 +67,10 @@ class Trolley_Estimator_ROS():
             x = self.curr_state[0] + T[0]*np.cos(self.curr_state[2]) - T[1]*np.sin(self.curr_state[2])
             y = self.curr_state[1] + T[0]*np.sin(self.curr_state[2]) + T[1]*np.cos(self.curr_state[2])
             yaw = self.curr_state[2] + euler_angles[2]
-            self.observation = np.array(x,y,yaw)
+
+            self.observation[0] = x
+            self.observation[1] = y
+            self.observation[2] = yaw
             self.is_obser = True
 
         # print(T)

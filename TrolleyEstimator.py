@@ -1,5 +1,4 @@
 
-
 import rospy
 import time
 import math
@@ -59,7 +58,7 @@ class TrolleyEstimator():
         self.T = T
         self.euler_angles = euler_angles
 
-        self.car_marker.header.frame_id = "camera_base"
+        self.car_marker.header.frame_id = "map"
         self.car_marker.type = self.car_marker.CUBE
         self.car_marker.pose.position.x = self.T[0]
         self.car_marker.pose.position.y = self.T[1]
@@ -89,7 +88,7 @@ class TrolleyEstimator():
 
         """
 
-        self.car_marker.header.frame_id = "camera_base"
+        self.car_marker.header.frame_id = "map"
         self.car_marker.type = self.car_marker.CUBE
         self.car_marker.pose.position.x = x
         self.car_marker.pose.position.y = y
@@ -321,10 +320,10 @@ class TrolleyEstimator():
         # dist_coefs = np.array([[0,0,0,0]]).T
 
         #jieting parameter
-        fx = 909.98
-        fy = 910.67
-        cx = 636.63
-        cy = 358.30
+        fx = 1371.511
+        fy = 1371.140
+        cx = 960.653
+        cy = 542.966
         dist_coefs = np.array([[0.0,0.0,0.0,0.0]]).T
 
         R_ext = np.array([[1,0,0],[0,0,1],[0,-1,0]])
@@ -369,7 +368,7 @@ class TrolleyEstimator():
             # print(points)
             R_, T, euler_angles,reprojection_error = self.solve_pose(points)
             print(reprojection_error)
-            if(reprojection_error<50):
+            if(reprojection_error<80):
                 T = self.R.dot(T)
                 euler_angles[0] = 0 
                 euler_angles[1] = 0
