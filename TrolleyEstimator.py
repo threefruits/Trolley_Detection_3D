@@ -40,7 +40,7 @@ class TrolleyEstimator():
         self.dim = (self.weight, self. height)
         self.R = np.array([[0,1,0],[-1,0,0],[0,0,1]])
         self.keypoint_model_path = r'./checkpoint/epoch_300.pth'
-        self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_500.pt'
+        self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_1200.pt'
         self.conf_thres=0.30
         self.iou_thres=0.45
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

@@ -40,7 +40,7 @@ class TrolleyEstimator():
         self.dim = (self.weight, self. height)
         self.R = np.array([[0,1,0],[-1,0,0],[0,0,1]])
         self.keypoint_model_path = r'./checkpoint/epoch_300.pth'
-        self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_500.pt'
+        self.yolo5_model_path=r'./checkpoint/yolo5_ckpt_1200.pt'
         self.conf_thres=0.30
         self.iou_thres=0.45
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -201,9 +201,9 @@ class TrolleyEstimator():
                 draw_img = cv2.circle(draw_img, (x, y), 3, [0, 255, 0], 2)
                 point_result_dict.append([x, y])
         # plt.subplot(1, 2, 2)
-        cv2.imshow('frame',draw_img)
-        if cv2.waitKey(1) == ord('q'):
-            cv2.destroyAllWindows()
+        # cv2.imshow('frame',draw_img)
+        # if cv2.waitKey(1) == ord('q'):
+        #     cv2.destroyAllWindows()
         return point_result_dict
 
     def generate_key_points(self, image):
@@ -256,6 +256,7 @@ class TrolleyEstimator():
             w_d = (point_in_original[2] - point_in_original[0]) 
             h_crop = (point_in_original[3] - point_in_original[1]) * (1+ 2*gamma)
             w_crop = (point_in_original[2] - point_in_original[0]) * (1+ 2*gamma)
+            # print("get")
             if(0<point_in_original[0]-(w_d*gamma).astype(int) and 0<point_in_original[1]-(h_d*gamma).astype(int) and point_in_original[2]+(w_d*gamma).astype(int)<w and point_in_original[3]+(h_d*gamma).astype(int)<h):
                 srcImg_crop = srcImg_padding[point_in_original[1]-(h_d*gamma).astype(int):point_in_original[3]+(h_d*gamma).astype(int),point_in_original[0]-(w_d*gamma).astype(int):point_in_original[2]+(w_d*gamma).astype(int)]
                 # print(srcImg_padding.shape,srcImg_crop.shape,point_in_original)
@@ -274,8 +275,8 @@ class TrolleyEstimator():
                         keypoint_in_original.append([x,y])
                     # print(keypoint_in_original)
 
-                    cv2.imshow("s",srcImg)
-                    cv2.waitKey(1)
+                    # cv2.imshow("s",srcImg)
+                    # cv2.waitKey(1)
                     # new_name = 'test' + '.jpg'
                     # dst =  new_name
                     # cv2.imwrite(dst,srcImg)
