@@ -14,7 +14,7 @@ class Trolley_Estimator_ROS():
     def __init__(self):
         self.TrolleyEstimator = TrolleyEstimator()
         self.curr_state = np.zeros(3)
-        self.__sub_img = rospy.Subscriber('/camera/color/image_raw', Image, self.__image_cb, queue_size=10)
+        self.__sub_img = rospy.Subscriber('/camera1/color/image_raw', Image, self.__image_cb, queue_size=10)
         self.__sub_curr_state = rospy.Subscriber('/curr_state', Float32MultiArray, self.__curr_pose_cb, queue_size=10)
         self.__pub_target = rospy.Publisher('/target', Float32MultiArray, queue_size=10)
         self.__pub_trolley = rospy.Publisher('/trolley', Float32MultiArray, queue_size=10)
@@ -36,7 +36,7 @@ class Trolley_Estimator_ROS():
     def state_filter(self,event): 
         target_point = Float32MultiArray()
         target_back_point = Float32MultiArray()
-        alpha = 0.3
+        alpha = 0.9
         # print("fsdfijsdhfjksdhfjk")
         if(self.is_obser):
             self.target = alpha * self.last_target + (1-alpha) * self.observation

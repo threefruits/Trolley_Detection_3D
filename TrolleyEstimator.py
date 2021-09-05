@@ -313,17 +313,17 @@ class TrolleyEstimator():
         # dist_coefs = np.array([[0.4808, -2.6471,-0.000164,-0.0001218,1.5565,0.361842,-2.47278,1.48308]]).T
 
         # anxin parameter
-        # fx = 920.22
-        # fy = 918.20
-        # cx = 648.84
-        # cy = 363.6268
+        fx = 914.34
+        fy = 914.09
+        cx = 640.84
+        cy = 361.6268
         # dist_coefs = np.array([[0,0,0,0]]).T
 
         #jieting parameter
-        fx = 1371.511
-        fy = 1371.140
-        cx = 960.653
-        cy = 542.966
+        # fx = 1371.511
+        # fy = 1371.140
+        # cx = 960.653
+        # cy = 542.966
         dist_coefs = np.array([[0.0,0.0,0.0,0.0]]).T
 
         R_ext = np.array([[1,0,0],[0,0,1],[0,-1,0]])
